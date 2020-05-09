@@ -1,0 +1,52 @@
+body {
+  background-color: #d1e5e5;
+  text-align: center;
+  font-family: 'Rubik', Helvetica, sans-serif;
+  padding: 2em 1em;
+}
+
+button {
+  background-color: #1a71a5;
+  border: none;
+  color: white;
+  padding: .5rem;
+  margin: 1rem;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  border-radius: 4px;
+}
+
+input {
+ padding: 12px 8px;
+  margin: 8px 0;
+  box-sizing: border-box;
+  max-width: 4rem;
+  font-size: 16px;
+  
+}
+
+#instructions, p {
+  max-width: 50%;
+  margin-left: 25%;
+  text-align: left;
+}
+
+#grid {
+  border-collapse: collapse;
+  border-style: hidden;
+  margin: 1rem auto;
+}
+
+.item {
+  border: 2px solid #1a71a5;
+  height: 115px;
+  width: 150px;
+  cursor: pointer;
+}
+
+img {
+  max-height: 100px;
+  cursor: pointer;
+}
