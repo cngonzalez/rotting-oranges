@@ -90,7 +90,6 @@ function setGrid(e, spec) {
   } else if (spec == 1) {
     grid = new Grid(grid.rows, e.target.value);
   }
-  grid.rebuildGrid();
   document.getElementById("grid").innerHTML = grid.htmlGrid;
 }
 
