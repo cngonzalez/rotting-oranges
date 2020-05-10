@@ -8,12 +8,11 @@ class Grid {
     this.rows = rows;
     this.cols = cols;
     this.grid = [];
-    this.htmlGrid = "";
     this.freshOranges = 0;
-    this.rebuildGrid();
   }
 
   rebuildGrid() {
+    let htmlGrid = "";
     for (let i=0;i<this.rows;i+=1) {
       let row = [];
       let DOMrow = "<tr>";
@@ -22,9 +21,10 @@ class Grid {
         DOMrow += `<td class='item' id='${i}-${j}'></td>`;
       }
       DOMrow += "</tr>";
-      this.htmlGrid += DOMrow;
+      htmlGrid += DOMrow;
       this.grid.push(row);
     }
+    return htmlGrid;
   }
   
   get(x, y) {
@@ -90,7 +90,7 @@ function setGrid(e, spec) {
   } else if (spec == 1) {
     grid = new Grid(grid.rows, e.target.value);
   }
-  document.getElementById("grid").innerHTML = grid.htmlGrid;
+  document.getElementById("grid").innerHTML = grid.rebuildGrid();
 }
 
 
@@ -175,8 +175,7 @@ function determineCoords(i, j) {
 function randomOranges() {
   //clear grid first
   grid = new Grid(grid.rows, grid.cols);
-  htmlGrid = document.getElementById("grid");
-  htmlGrid.innerHTML = grid.htmlGrid;
+  document.getElementById("grid").innerHTML = grid.rebuildGrid();
 
   let orangeAmt = Math.floor(.75 * (grid.rows * grid.cols));
   let i = 0;
