@@ -1,16 +1,62 @@
 /*
-* DEFAULTS / GLOBAL VARS
+* CLASS DECLARATION
 */
-let grid = [[1,0,2],[2,0,0],[1,1,0]];
-let ROWS = 3;
-let COLS = 3;
-let freshOranges;
+
+class Grid {
+
+  constructor(rows, cols) {
+    this.rows = rows;
+    this.cols = cols;
+    this.grid = [];
+    this.htmlGrid = "";
+    this.freshOranges = 0;
+    this.rebuildGrid();
+  }
+
+  rebuildGrid() {
+    for (let i=0;i<this.rows;i+=1) {
+      let row = [];
+      let DOMrow = "<tr>";
+      for (let j=0;j<this.cols;j+=1) {
+        row.push(0);
+        DOMrow += `<td class='item' id='${i}-${j}'></td>`;
+      }
+      DOMrow += "</tr>";
+      this.htmlGrid += DOMrow;
+      this.grid.push(row);
+    }
+  }
+  
+  get(x, y) {
+    return this.grid[x][y];
+  }
+
+  set(x,y,val) {
+    if (this.grid[x][y] == 1 && val != 1) {
+      this.freshOranges--;
+    } else if (this.grid[x][y] != 1 && val == 1) {
+      this.freshOranges++;
+    }
+    this.grid[x][y] = val;
+  }
+
+  defaultGrid() {
+    this.grid = [[1,0,2],[2,0,0],[1,1,0]];
+    this.freshOranges = 3;
+  }
+
+}
+
+//global var
+let grid;
 
 /*
 * LISTENERS
 */
 document.addEventListener("DOMContentLoaded", function() {
-  const go = document.getElementById("go");
+  grid = new Grid(3, 3);
+  grid.defaultGrid();
+  
   document.getElementById("width").addEventListener(
     "change", (e) => setGrid(e, 0));
   document.getElementById("height").addEventListener(
@@ -29,6 +75,7 @@ document.addEventListener("DOMContentLoaded", function() {
   });
 
   document.getElementById("go").addEventListener("click", passTime);
+  document.getElementById("random").addEventListener("click", randomOranges);
 
 });
 
@@ -37,58 +84,29 @@ document.addEventListener("DOMContentLoaded", function() {
 * DOM MANIPULATION METHODS
 */
 
-//when input is received, change lets and rebuild DOM
 function setGrid(e, spec) {
-  if (spec == 0) {COLS = e.target.value;}
-  else if (spec == 1) {ROWS = e.target.value;}
-  rebuildGrid();
-}
-
-
-//it's expensive to access the DOM for every orange val when you need it,
-//so build both in mem and in DOM
-function rebuildGrid() {
-  let DOMgrid = document.getElementById("grid");
-  DOMgrid.innerHTML="";
-
-  for (i=0;i<ROWS;i+=1) {
-    let row = [];
-    let DOMrow = "<tr>";
-    for (j=0;j<COLS;j+=1) {
-      row.push(0);
-      DOMrow += `<td class='item' id='${i}-${j}'></td>`;
-    }
-    DOMrow += "</tr>";
-    DOMgrid.innerHTML += DOMrow;
-    grid.push(row);
+  if (spec == 0) {
+    grid = new Grid(e.target.value, grid.cols);
+  } else if (spec == 1) {
+    grid = new Grid(grid.rows, e.target.value);
   }
+  grid.rebuildGrid();
+  document.getElementById("grid").innerHTML = grid.htmlGrid;
 }
 
-//cycle through values and change DOM
+
 function setOrange(orangeLoc) {
-  orangeLoc.innerHTML = "";
   let coord = orangeLoc.id.split("-");
-  let item = grid[coord[0]][coord[1]];
-  let newVal;
-  let newImg;
-  //we could also edit toRot and freshOranges here,
-  //but it becomes a little cluttered
-  switch(item) {
-    case 0:
-      newVal = 1;
-      newImg = "./fresh-orange.png";
-      break;
-    case 1:
-      newVal = 2;
-      newImg = "./rotten-orange.png";
-      break;
-    default:
-      newVal = 0;
-  }
-  grid[coord[0]][coord[1]] = newVal;
-  if (newImg) {
-    orangeLoc.innerHTML = `<img src="${newImg}" />`;
-  }
+  let newVal = grid.get(coord[0], coord[1]) + 1;
+  let newImg = "";
+
+  //roll over back to zero
+  if (newVal > 2) {newVal = 0;}
+  else if (newVal == 1) {newImg = "<img src='./fresh-orange.png'/>";}
+  else if (newVal == 2) {newImg = "<img src='./rotten-orange.png'/>";}
+
+  grid.set(coord[0], coord[1], newVal);
+  orangeLoc.innerHTML = newImg;
 }
 
 
@@ -98,29 +116,26 @@ function setOrange(orangeLoc) {
 
 //main function -- async to allow time for coherent DOM update
 async function passTime() {
-    freshOranges = 0;
     let timeElapsed = 0;
     document.getElementById("timePassed").innerHTML = `${timeElapsed}m`;
     let toRot = [];
-    for (i=0;i<ROWS;i+=1) {
-        for (j=0;j<COLS;j+=1) {
-            if (grid[i][j] == 2) {
+
+    for (i=0;i<grid.rows;i+=1) {
+        for (j=0;j<grid.cols;j+=1) {
+            if (grid.get(i, j) == 2) {
                 toRot = toRot.concat(determineCoords(i, j));
-            }
-            else if (grid[i][j] == 1) {
-                freshOranges++;
             }
         }
     }
 
-    toRot = toRot.filter((coord) => grid[coord[0]][coord[1]] == 1);
+    toRot = toRot.filter((coord) => grid.get(coord[0], coord[1]) == 1);
     while (toRot.length) {
       timeElapsed++;
       document.getElementById("timePassed").innerHTML = `${timeElapsed}m`;
       toRot = await rotOranges(toRot);
     }
 
-    if (freshOranges != 0) {
+    if (grid.freshOranges != 0) {
       let warning = ", but it is impossible for all these oranges to rot!";
       document.getElementById("timePassed").innerHTML += warning;
     }
@@ -131,8 +146,7 @@ async function passTime() {
 function rotOranges(toRot) {
   let nextRot = [];
   toRot.forEach(function(coord) {
-    if (grid[coord[0]][coord[1]] == 1) {
-        freshOranges--;
+    if (grid.get(coord[0], coord[1]) == 1) {
         setOrange(document.getElementById(`${coord[0]}-${coord[1]}`));
         nextRot = nextRot.concat(determineCoords(coord[0], coord[1]));
     }
@@ -140,24 +154,43 @@ function rotOranges(toRot) {
 
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve(nextRot.filter((coord) => grid[coord[0]][coord[1]] == 1));
+      resolve(nextRot.filter((coord) => grid.get(coord[0], coord[1]) == 1));
       }, 750)
   });
 }
-
 
 //helper function -- get adjacent nodes
 function determineCoords(i, j) {
     let coords = [];
     if (i > 0) {coords.push([i-1, j]);}
-    if (i < ROWS - 1) {coords.push([i+1, j]);}
+    if (i < grid.rows - 1) {coords.push([i+1, j]);}
     if (j > 0) {coords.push([i, j-1]);}
-    if (j < COLS - 1) {coords.push([i, j+1]);}
+    if (j < grid.cols - 1) {coords.push([i, j+1]);}
     return coords;
 }
 
 
 /*
- * BONUS FUNCTION
+ * EXTRA: MAKE FILLING THE BOXES EASIER FOR A USER
  */
+function randomOranges() {
+  //clear grid first
+  grid = new Grid(grid.rows, grid.cols);
+  htmlGrid = document.getElementById("grid");
+  htmlGrid.innerHTML = grid.htmlGrid;
+
+  let orangeAmt = Math.floor(.75 * (grid.rows * grid.cols));
+  let i = 0;
+  let coords = [[Math.floor(Math.random() * grid.rows),
+              Math.floor(Math.random() * grid.cols)]]
+  while (i < orangeAmt) {
+    let coord = coords[0];
+    let neighbors = determineCoords(coord[0], coord[1])
+    coords.unshift(neighbors[Math.floor(Math.random() * neighbors.length)]);
+    i++;
+  }
+  coords.forEach((coord) => 
+    setOrange(document.getElementById(`${coord[0]}-${coord[1]}`))
+  );
+}
 
